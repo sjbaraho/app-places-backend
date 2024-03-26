@@ -1,12 +1,17 @@
 const express = require("express");
-const app = express();
+const mongoose = require("mongoose");
+require("dotenv").config();
 
 const HttpError = require("./models/http-error");
 const placesRoutes = require("./routes/places-routes");
+const usersRoutes = require("./routes/users-routes");
+
+const app = express();
 
 app.use(express.json());
 
 app.use("/api/places", placesRoutes);
+app.use("/api/users", usersRoutes);
 
 app.use((req, res, next) => {
   const error = new HttpError("Could not find this route.", 404);
@@ -24,4 +29,13 @@ app.use((error, req, res, next) => {
     .json({ message: error.message || "An unknown error occured." });
 });
 
-app.listen(5000);
+mongoose
+  .connect(
+    `mongodb+srv://${process.env.USER_NAME}:${process.env.PASSWORD}@app-places.v9xwgd1.mongodb.net/places`
+  )
+  .then(() => {
+    app.listen(5000);
+  })
+  .catch((err) => {
+    console.log(err);
+  });
