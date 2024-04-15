@@ -1,5 +1,6 @@
 const { validationResult } = require("express-validator");
 const mongoose = require("mongoose");
+const fs = require("fs");
 
 const HttpError = require("../models/http-error");
 const getCoordsForAddress = require("../util/location");
@@ -82,7 +83,7 @@ const createPlace = async (req, res, next) => {
     location: coordinates,
     address,
     creator,
-    image: "https://picsum.photos",
+    image: req.file.path,
   });
 
   let user;
@@ -98,8 +99,6 @@ const createPlace = async (req, res, next) => {
     const error = new HttpError("Could not find user for provided id.", 404);
     return next(error);
   }
-
-  console.log(user);
 
   try {
     const session = await mongoose.startSession();
@@ -146,7 +145,7 @@ const updatePlace = async (req, res, next) => {
     await place.save();
   } catch (error) {
     const err = new HttpError(
-      "Something went wronf, could not update place.",
+      "Something went wrong, could not update place.",
       500
     );
     return next(err);
@@ -158,6 +157,7 @@ const updatePlace = async (req, res, next) => {
 const deletePlace = async (req, res, next) => {
   const placeID = req.params.pid;
   let place;
+  let imagePath;
 
   try {
     place = await Place.findById(placeID).populate("creator");
@@ -166,6 +166,8 @@ const deletePlace = async (req, res, next) => {
       const error = new HttpError("Could not find a place for this id.", 404);
       return next(error);
     }
+
+    imagePath = place.image;
 
     const sess = await mongoose.startSession();
     sess.startTransaction();
@@ -180,6 +182,10 @@ const deletePlace = async (req, res, next) => {
     );
     return next(error);
   }
+
+  fs.unlink(imagePath, (error) => {
+    console.log(error);
+  });
 
   res.status(200).json({ message: "Deleted place." });
 };
