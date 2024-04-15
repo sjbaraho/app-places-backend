@@ -15,7 +15,7 @@ const getPlaceById = async (req, res, next) => {
     place = await Place.findById(placeID);
   } catch (error) {
     const err = new HttpError(
-      "Something went wrong, could not find a place",
+      "Something went wrong, could not find a place.",
       500
     );
     return next(err);
@@ -23,7 +23,7 @@ const getPlaceById = async (req, res, next) => {
 
   if (!place) {
     const error = new HttpError(
-      "Could not find a place for the provided ID",
+      "Could not find a place for the provided ID.",
       404
     );
     return next(error);
@@ -40,7 +40,7 @@ const getPlacesByUserId = async (req, res, next) => {
     places = await Place.find({ creator: userID });
   } catch (error) {
     const err = new HttpError(
-      "Something went wrong, could not find places",
+      "Something went wrong, could not find places.",
       500
     );
     return next(err);
@@ -48,7 +48,7 @@ const getPlacesByUserId = async (req, res, next) => {
 
   if (places.length === 0) {
     const err = new HttpError(
-      "Could not find places for the provided user ID",
+      "Could not find places for the provided user ID.",
       404
     );
     return next(err);
@@ -64,11 +64,11 @@ const createPlace = async (req, res, next) => {
 
   if (!errors.isEmpty()) {
     return next(
-      new HttpError("Invalid inputs passed, please check your data", 422)
+      new HttpError("Invalid inputs passed, please check your data.", 422)
     );
   }
 
-  const { title, description, address, creator } = req.body;
+  const { title, description, address } = req.body;
   let coordinates;
 
   try {
@@ -82,14 +82,14 @@ const createPlace = async (req, res, next) => {
     description,
     location: coordinates,
     address,
-    creator,
+    creator: req.userData.userId,
     image: req.file.path,
   });
 
   let user;
 
   try {
-    user = await User.findById(creator);
+    user = await User.findById(req.userData.userId);
   } catch (error) {
     const err = new HttpError("Creating place failed, please try again.", 500);
     return next(err);
@@ -120,7 +120,7 @@ const updatePlace = async (req, res, next) => {
 
   if (!errors.isEmpty()) {
     return next(
-      new HttpError("Invalid inputs passed, please check your data", 422)
+      new HttpError("Invalid inputs passed, please check your data.", 422)
     );
   }
 
@@ -132,9 +132,14 @@ const updatePlace = async (req, res, next) => {
     place = await Place.findById(placeID);
   } catch (error) {
     const err = new HttpError(
-      "Something went wrong, could not update place",
+      "Something went wrong, could not update place.",
       500
     );
+    return next(err);
+  }
+
+  if (place.creator.toString() !== req.userData.userId) {
+    const err = new HttpError("You are not allowed to edit this place.", 401);
     return next(err);
   }
 
@@ -165,6 +170,14 @@ const deletePlace = async (req, res, next) => {
     if (!place) {
       const error = new HttpError("Could not find a place for this id.", 404);
       return next(error);
+    }
+
+    if (place.creator.id !== req.userData.userId) {
+      const err = new HttpError(
+        "You are not allowed to delete this place.",
+        401
+      );
+      return next(err);
     }
 
     imagePath = place.image;
