@@ -51,7 +51,7 @@ app.use((error, req, res, next) => {
 
 mongoose
   .connect(
-    `mongodb+srv://${process.env.USER_NAME}:${process.env.PASSWORD}@app-places.v9xwgd1.mongodb.net/app-places`
+    `mongodb+srv://${process.env.USER_NAME}:${process.env.PASSWORD}@app-places.v9xwgd1.mongodb.net/${process.env.DB_NAME}`
   )
   .then(() => {
     app.listen(5000);
